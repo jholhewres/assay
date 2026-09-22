@@ -7,6 +7,19 @@ description: Set up assay rubrics for the current repository — discover what a
 
 Write a calibrated `.assay/` for this repository.
 
+## The command
+
+Resolve the CLI once, so this works whether assay is on PATH or only shipped
+with the plugin:
+
+```bash
+ASSAY="$(command -v assay || echo "node ${CLAUDE_PLUGIN_ROOT}/bin/assay.mjs")"
+```
+
+Every `assay ...` below means `$ASSAY ...`. It needs `AI_GATEWAY_API_KEY` in
+the environment; if it is unset, say so and stop rather than reporting a
+failure as a result.
+
 The questions are nearly fixed and ship with the tool. Your job is the two
 things only someone reading this repository can do:
 

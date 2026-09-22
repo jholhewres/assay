@@ -1,0 +1,9 @@
+{
+  "name": "assay",
+  "version": "0.1.0",
+  "description": "Gate work on a measurement instead of a model's opinion: typed rubrics, calibrated thresholds, and a harness that checks whether a rubric actually separates.",
+  "author": { "name": "Jhol Hewres" },
+  "repository": "https://github.com/jholhewres/assay",
+  "license": "MIT",
+  "keywords": ["rubric", "calibration", "evaluation", "quality-gate", "agent-loop"]
+}

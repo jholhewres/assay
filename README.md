@@ -39,15 +39,31 @@ and tells you whether the rubric actually separates them.**
 
 ## Install
 
+As a Claude Code plugin — ships the CLI, the rubrics and the setup skill:
+
+```
+/plugin marketplace add jholhewres/assay
+/plugin install assay@assay
+```
+
+Or standalone:
+
 ```bash
-npm install -g assay-cli
+git clone https://github.com/jholhewres/assay
+ln -s "$PWD/assay/bin/assay.mjs" ~/.local/bin/assay
 assay init                 # copies the bundled rubrics into ~/.assay
+```
+
+Either way:
+
+```bash
 export AI_GATEWAY_API_KEY=...
 ```
 
-Node 20+. The default driver calls an evaluation model through the
-[Vercel AI Gateway](https://vercel.com/docs/ai-gateway/modalities/evaluation);
-see [Providers](#providers) to point it somewhere else.
+Node 20+, no dependencies. The default driver calls an evaluation model through
+the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway/modalities/evaluation)
+— by default TypeSafe AI's Jev; see [Providers](#providers) to point it
+somewhere else.
 
 ## Use
 
@@ -222,9 +238,10 @@ iterations will not find that out.
 
 ## Claude Code skill
 
-`skill/SKILL.md` sets up `.assay/` for a repository: read the conventions,
-find the ground truth the repo already produced, calibrate against it, write
-the file. Copy it into `~/.claude/skills/assay-init/`.
+`skills/assay-init/SKILL.md` sets up `.assay/` for a repository: read the
+conventions, find the ground truth the repo already produced, calibrate against
+it, write the file. Installing the plugin registers it; otherwise copy it into
+`~/.claude/skills/assay-init/`.
 
 It will refuse to write thresholds it could not measure. That refusal is the
 feature.
