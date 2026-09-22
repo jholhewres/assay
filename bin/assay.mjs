@@ -12,8 +12,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const USAGE = `assay — measure an artifact against a rubric, instead of asking a model whether it is happy
 
   assay <rubric> [--json] [--force]        judge the state on stdin
-  assay <rubric> --batch <file.jsonl>      judge many states
-  assay calibrate <rubric> --corpus <file.jsonl> [--write]
+  assay <rubric> --batch <file.jsonl|->    judge many states ("-" reads stdin)
+  assay calibrate <rubric> --corpus <file.jsonl|-> [--write]
   assay init [--force]                     install the bundled rubrics into ~/.assay
   assay list                               show the rubrics in scope
 
@@ -21,6 +21,10 @@ exit codes
   0  every question passed
   1  at least one question failed
   2  needs a human, or the rubric was never calibrated
+
+State comes from stdin — a file is never required. Pipe it from anything:
+  jira issue view ABC-123 --plain | assay story-refinement
+  curl -s "$API/issue/ABC-123" | jq '{summary,description}' | assay story-refinement
 
 A corpus row is one JSON object per line:
   {"id":"001","state":"...","label":true}
@@ -52,17 +56,23 @@ async function readStdin() {
   return Buffer.concat(chunks).toString('utf8').trim();
 }
 
-function readCorpus(path) {
-  const raw = readFileSync(path, 'utf8').trim();
-  if (!raw) throw new Error(`${path} is empty`);
+function parseCorpus(raw, label) {
+  raw = raw.trim();
+  if (!raw) throw new Error(`${label} is empty`);
   const rows = raw.split('\n').filter(Boolean).map((line, index) => {
     try {
       return JSON.parse(line);
     } catch (err) {
-      throw new Error(`${path}:${index + 1}: ${err.message}`);
+      throw new Error(`${label}:${index + 1}: ${err.message}`);
     }
   });
   return rows.map((row, index) => ({ id: row.id ?? String(index + 1), ...row }));
+}
+
+/** A dash means stdin, so a corpus can come straight out of another command. */
+async function readCorpus(path) {
+  if (path === '-' || path === true) return parseCorpus(await readStdin(), 'stdin');
+  return parseCorpus(readFileSync(path, 'utf8'), path);
 }
 
 /** Parse a state that may be plain text or JSON — both are valid input. */
@@ -120,7 +130,7 @@ function cmdList() {
 async function cmdCalibrate(name, flags) {
   if (!flags.corpus) fail('calibrate needs --corpus <file.jsonl>');
   const rubric = loadRubric(name);
-  const corpus = readCorpus(flags.corpus);
+  const corpus = await readCorpus(flags.corpus);
 
   const labelled = corpus.filter((r) => typeof r.label === 'boolean' || r.labels);
   if (!labelled.length) fail('no row in the corpus carries a label — there is nothing to calibrate against');
@@ -177,7 +187,7 @@ async function cmdAssess(name, flags) {
   }
 
   if (flags.batch) {
-    const corpus = readCorpus(flags.batch);
+    const corpus = await readCorpus(flags.batch);
     const rows = [];
     for (const row of corpus) {
       const result = await assess(rubric, row.state);
