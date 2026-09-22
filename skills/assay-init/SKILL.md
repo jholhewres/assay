@@ -83,8 +83,12 @@ Read the report with the user:
 - **separates** — the rubric tells the two populations apart. Take the
   suggested threshold.
 - **separates weakly** — usable with a grey band, not for automation.
-- **does not separate** — the question is wrong. A threshold will not save it.
-  Rewrite the question and calibrate again.
+- **does not separate** — either the question or the labels are wrong, and a
+  threshold will not save either. Check the labels first: a case labelled
+  negative for a reason the question does not ask about (deprioritised,
+  blocked elsewhere) is noise for that question. Relabel per question with
+  `labels`. Rewrite the question only if it still does not separate on labels
+  that measure what it asks.
 
 Look at the misses by hand. A false positive usually means the question is
 catching something legitimate, which is the same failure as a pattern that

@@ -110,6 +110,11 @@ cleanly, changes sent back in review versus merged first time, commits that
 reverted another commit. Anything a person already sorted is a label. Twenty
 honest rows beat two hundred invented ones.
 
+Make sure a label measures what the question asks. An item that stalled
+because it was deprioritised says nothing about whether it was clear — label
+it per question with `labels`, and leave out the questions it is no evidence
+for.
+
 ```
 $ assay calibrate story-refinement --corpus corpus.jsonl
 
@@ -126,7 +131,7 @@ $ assay calibrate story-refinement --corpus corpus.jsonl
 |---|---|
 | `separates` (auc ≥ 0.85) | take the suggested threshold |
 | `separates weakly` (≥ 0.7) | keep a grey band, do not automate |
-| `does not separate` | the question is wrong — no threshold saves it |
+| `does not separate` | the question or the labels are wrong — check what the labels measure first |
 
 `--write` stores the measured thresholds and leaves out every question that is
 not usable — including any with fewer than **3 examples on either side**, where

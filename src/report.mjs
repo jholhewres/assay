@@ -74,7 +74,11 @@ export function renderCalibration(report) {
     lines.push(`    auc ${stats.auc ?? '-'}  ${stats.verdict}  (${stats.positives} pass / ${stats.negatives} fail)`);
     // An unusable question gets no printed threshold: a number on screen gets copied.
     if (!stats.usable) {
-      lines.push('    no threshold — not enough evidence to set one');
+      lines.push(
+        stats.verdict === 'does not separate'
+          ? '    no threshold — check that the labels measure what this question asks, then the question'
+          : '    no threshold — not enough evidence to set one',
+      );
       lines.push('');
       continue;
     }
