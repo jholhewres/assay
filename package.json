@@ -1,6 +1,6 @@
 {
   "name": "assay-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Measure an artifact against a rubric, and calibrate the rubric against cases you already know the answer to.",
   "type": "module",
   "bin": { "assay": "bin/assay.mjs" },
