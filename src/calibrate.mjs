@@ -59,11 +59,26 @@ export function bestThreshold(rows, higherIsPositive) {
   return best;
 }
 
-export function separationVerdict(areaUnderCurve) {
+/**
+ * Below this many examples on either side, the area under the curve is an
+ * artefact of the sample rather than a property of the question. One negative
+ * case can produce a confident-looking 0.82 that means nothing.
+ */
+export const MIN_PER_CLASS = 3;
+
+export function separationVerdict(areaUnderCurve, positives = Infinity, negatives = Infinity) {
   if (areaUnderCurve === null) return 'needs both passing and failing examples';
+  if (positives < MIN_PER_CLASS || negatives < MIN_PER_CLASS) {
+    return `too few examples (${positives} pass / ${negatives} fail, need ${MIN_PER_CLASS} of each)`;
+  }
   if (areaUnderCurve >= 0.85) return 'separates';
   if (areaUnderCurve >= 0.7) return 'separates weakly';
   return 'does not separate';
+}
+
+/** Only these verdicts justify writing a threshold. */
+export function isUsable(verdict) {
+  return verdict === 'separates' || verdict === 'separates weakly';
 }
 
 /**
@@ -74,7 +89,7 @@ export function separationVerdict(areaUnderCurve) {
  * SHOULD pass, or { id, state, labels: { questionId: true } } for per-question
  * ground truth.
  */
-export async function calibrate(rubric, corpus, { concurrency = 4, onProgress } = {}) {
+export async function calibrate(rubric, corpus, { concurrency = 2, onProgress } = {}) {
   const provider = getProvider(rubric.provider);
   const results = new Array(corpus.length);
   let cursor = 0;
@@ -120,7 +135,7 @@ export async function calibrate(rubric, corpus, { concurrency = 4, onProgress } 
     }
 
     if (!rows.length) {
-      perQuestion[id] = { n: 0, verdict: 'no labelled rows' };
+      perQuestion[id] = { n: 0, verdict: 'no labelled rows', usable: false };
       continue;
     }
 
@@ -129,13 +144,15 @@ export async function calibrate(rubric, corpus, { concurrency = 4, onProgress } 
     const raw = auc(positives, negatives);
     const area = raw === null ? null : higherIsPositive ? raw : 1 - raw;
     const best = bestThreshold(rows, higherIsPositive);
+    const verdict = separationVerdict(area, positives.length, negatives.length);
 
     perQuestion[id] = {
       n: rows.length,
       positives: positives.length,
       negatives: negatives.length,
       auc: area === null ? null : Number(area.toFixed(3)),
-      verdict: separationVerdict(area),
+      verdict,
+      usable: isUsable(verdict),
       suggested: higherIsPositive ? { min: best.threshold } : { max: best.threshold },
       atSuggested: best,
       misses: rows
@@ -148,6 +165,9 @@ export async function calibrate(rubric, corpus, { concurrency = 4, onProgress } 
     rubric: rubric.name,
     corpusSize: corpus.length,
     evaluated: corpus.length - errors.length,
+    // A partial run cannot be trusted: the rows that failed are not a random
+    // sample, and the ones that survived may be all of one class.
+    complete: errors.length === 0,
     errors: errors.map((e) => ({ id: e.row?.id, error: e.error })),
     perQuestion,
     calibratedAt: new Date().toISOString(),

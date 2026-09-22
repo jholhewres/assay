@@ -51,12 +51,15 @@ test('calibration reports separation and a usable threshold', async () => {
   const corpus = [
     { id: 'a', label: true, state: 'Check: asserts something' },
     { id: 'b', label: true, state: 'Check: asserts another thing' },
-    { id: 'c', label: false, state: 'make it nicer' },
-    { id: 'd', label: false, state: 'improve things' },
+    { id: 'c', label: true, state: 'Check: asserts a third thing' },
+    { id: 'd', label: false, state: 'make it nicer' },
+    { id: 'e', label: false, state: 'improve things' },
+    { id: 'f', label: false, state: 'should work correctly' },
   ];
   const report = await calibrate(rubric, corpus, { concurrency: 2 });
 
-  assert.equal(report.evaluated, 4);
+  assert.equal(report.evaluated, 6);
+  assert.equal(report.complete, true);
   assert.equal(report.errors.length, 0);
   assert.equal(report.perQuestion.acceptanceTestable.auc, 1);
   assert.equal(report.perQuestion.acceptanceTestable.verdict, 'separates');
@@ -66,6 +69,35 @@ test('calibration reports separation and a usable threshold', async () => {
   // A score question is inverted: passing cases sit BELOW the threshold.
   assert.equal(report.perQuestion.size.verdict, 'separates');
   assert.equal(report.perQuestion.size.suggested.max, 1.2);
+});
+
+test('one negative example is not evidence, however good the auc looks', async () => {
+  // The reported failure: 12 rows measured, only 1 on the failing side.
+  const corpus = [
+    ...Array.from({ length: 11 }, (_, i) => ({ id: `p${i}`, label: true, state: 'Check: x' })),
+    { id: 'n0', label: false, state: 'vague' },
+  ];
+  const report = await calibrate(rubric, corpus);
+  const q = report.perQuestion.acceptanceTestable;
+  assert.equal(q.negatives, 1);
+  assert.equal(q.usable, false);
+  assert.match(q.verdict, /too few examples/);
+});
+
+test('a run with failed rows is marked incomplete', async () => {
+  register({
+    id: 'flaky',
+    async evaluate({ state }) {
+      if (state === 'boom') throw new Error('gateway 429: rate limited');
+      return { answers: { acceptanceTestable: { type: 'boolean', probability: 0.9 } } };
+    },
+  });
+  const report = await calibrate({ ...rubric, provider: 'flaky' }, [
+    { id: 'a', label: true, state: 'ok' },
+    { id: 'b', label: false, state: 'boom' },
+  ]);
+  assert.equal(report.complete, false);
+  assert.equal(report.errors.length, 1);
 });
 
 test('an unlabelled row is skipped rather than guessed at', async () => {

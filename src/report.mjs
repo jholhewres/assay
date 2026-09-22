@@ -57,7 +57,11 @@ export function renderBatch(rows) {
 }
 
 export function renderCalibration(report) {
-  const lines = [`  rubric: ${report.rubric}`, `  corpus: ${report.evaluated}/${report.corpusSize} evaluated`, ''];
+  const lines = [`  rubric: ${report.rubric}`, `  corpus: ${report.evaluated}/${report.corpusSize} evaluated`];
+  if (!report.complete) {
+    lines.push(`  INCOMPLETE — ${report.errors.length} row(s) failed; this measurement is not trustworthy`);
+  }
+  lines.push('');
 
   for (const [id, stats] of Object.entries(report.perQuestion)) {
     lines.push(`  ${id}`);
@@ -68,6 +72,12 @@ export function renderCalibration(report) {
     }
     const key = stats.suggested.min !== undefined ? 'min' : 'max';
     lines.push(`    auc ${stats.auc ?? '-'}  ${stats.verdict}  (${stats.positives} pass / ${stats.negatives} fail)`);
+    // An unusable question gets no printed threshold: a number on screen gets copied.
+    if (!stats.usable) {
+      lines.push('    no threshold — not enough evidence to set one');
+      lines.push('');
+      continue;
+    }
     lines.push(
       `    suggested ${key} ${stats.suggested[key]}  ` +
         `accuracy ${(stats.atSuggested.accuracy * 100).toFixed(0)}%  ` +

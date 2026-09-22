@@ -4,7 +4,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadRubric, findLocalDir, GLOBAL_DIR } from '../src/config.mjs';
 import { assess, exitCodeFor, PASS, FAIL, REVIEW } from '../src/evaluate.mjs';
-import { calibrate } from '../src/calibrate.mjs';
+import { calibrate, isUsable } from '../src/calibrate.mjs';
 import { renderAssessment, renderBatch, renderCalibration } from '../src/report.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -17,10 +17,15 @@ const USAGE = `assay — measure an artifact against a rubric, instead of asking
   assay init [--force]                     install the bundled rubrics into ~/.assay
   assay list                               show the rubrics in scope
 
-exit codes
+exit codes (assessing)
   0  every question passed
   1  at least one question failed
   2  needs a human, or the rubric was never calibrated
+
+exit codes (calibrate)
+  0  every row evaluated and every question is usable
+  1  some question did not separate or had too few examples
+  2  rows failed to evaluate — nothing was written without --force
 
 State comes from stdin — a file is never required. Pipe it from anything:
   jira issue view ABC-123 --plain | assay story-refinement
@@ -137,7 +142,7 @@ async function cmdCalibrate(name, flags) {
 
   const quiet = Boolean(flags.json);
   const report = await calibrate(rubric, corpus, {
-    concurrency: Number(flags.concurrency) || 4,
+    concurrency: Number(flags.concurrency) || 2,
     onProgress: quiet ? undefined : (done, total) => process.stderr.write(`\r  evaluating ${done}/${total}`),
   });
   if (!quiet) process.stderr.write('\r\x1b[K');
@@ -148,6 +153,17 @@ async function cmdCalibrate(name, flags) {
     process.stdout.write('\n' + renderCalibration(report) + '\n');
   }
 
+  // A partial run is not a small version of a complete one. The rows that
+  // failed are not a random sample, and the survivors can be all of one class.
+  if (!report.complete && flags.write && !flags.force) {
+    process.stderr.write(
+      `\n  refusing to write: ${report.errors.length} of ${report.corpusSize} rows failed to evaluate.\n` +
+        '  Thresholds measured on a partial corpus would look calibrated and would not be.\n' +
+        '  Fix the failures and run again, or pass --force to write anyway.\n',
+    );
+    process.exit(2);
+  }
+
   if (flags.write) {
     const dir = findLocalDir() || GLOBAL_DIR;
     mkdirSync(dir, { recursive: true });
@@ -155,28 +171,36 @@ async function cmdCalibrate(name, flags) {
     const existing = existsSync(target) ? JSON.parse(readFileSync(target, 'utf8')) : { name };
     existing.thresholds = existing.thresholds || {};
     for (const [id, stats] of Object.entries(report.perQuestion)) {
-      if (!stats.n || stats.verdict === 'does not separate') continue;
+      if (!isUsable(stats.verdict)) continue;
       existing.thresholds[id] = { ...(existing.thresholds[id] || {}), ...stats.suggested };
     }
     existing.calibration = {
       calibratedAt: report.calibratedAt,
       corpus: flags.corpus,
       n: report.evaluated,
+      complete: report.complete,
+      ...(report.complete ? {} : { failedRows: report.errors.length, forced: true }),
       perQuestion: Object.fromEntries(
-        Object.entries(report.perQuestion).map(([id, s]) => [id, { auc: s.auc, verdict: s.verdict, n: s.n }]),
+        Object.entries(report.perQuestion).map(([id, s]) => [
+          id,
+          { auc: s.auc, verdict: s.verdict, n: s.n, positives: s.positives, negatives: s.negatives },
+        ]),
       ),
     };
     writeFileSync(target, JSON.stringify(existing, null, 2) + '\n');
     process.stdout.write(`\n  wrote ${target}\n`);
 
-    const skipped = Object.entries(report.perQuestion).filter(([, s]) => s.n && s.verdict === 'does not separate');
+    const skipped = Object.entries(report.perQuestion).filter(([, s]) => !isUsable(s.verdict));
     if (skipped.length) {
-      process.stdout.write(
-        `  left uncalibrated (no separation): ${skipped.map(([id]) => id).join(', ')}\n` +
-          '  rewrite those questions — a threshold would not save them.\n',
-      );
+      process.stdout.write('  left uncalibrated:\n');
+      for (const [id, s] of skipped) process.stdout.write(`    ${id} — ${s.verdict}\n`);
     }
   }
+
+  // Say so in the exit code, not only in the prose above it.
+  const unusable = Object.values(report.perQuestion).filter((s) => !isUsable(s.verdict)).length;
+  if (!report.complete) process.exit(flags.write && flags.force ? 1 : 2);
+  if (unusable) process.exit(1);
 }
 
 async function cmdAssess(name, flags) {

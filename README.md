@@ -128,9 +128,15 @@ $ assay calibrate story-refinement --corpus corpus.jsonl
 | `separates weakly` (≥ 0.7) | keep a grey band, do not automate |
 | `does not separate` | the question is wrong — no threshold saves it |
 
-`--write` stores the measured thresholds and leaves out the questions that did
-not separate. Keep the corpus beside the rubric: a threshold without the cases
-that produced it cannot be audited.
+`--write` stores the measured thresholds and leaves out every question that is
+not usable — including any with fewer than **3 examples on either side**, where
+the curve describes the sample rather than the question. It **refuses to write
+at all if any row failed to evaluate**: the rows that fail are not a random
+sample, and the survivors can be all of one class. Transient gateway errors
+(429, 5xx) are retried with backoff before a row counts as failed.
+
+Keep the corpus beside the rubric: a threshold without the cases that produced
+it cannot be audited.
 
 ## Rubrics
 
