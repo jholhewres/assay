@@ -115,3 +115,64 @@ test('a provider failure is reported, not swallowed', async () => {
   assert.equal(report.evaluated, 0);
   assert.equal(report.errors[0].error, 'gateway 500');
 });
+
+test('a calibrated rubric does not judge questions that failed to calibrate', async () => {
+  // The reported failure: singlePurpose/size did not separate, but inherited
+  // the global default thresholds and still failed stories on them.
+  let asked = null;
+  register({
+    id: 'spy',
+    async evaluate({ questions }) {
+      asked = Object.keys(questions);
+      return {
+        answers: {
+          acceptanceTestable: { type: 'boolean', probability: 0.9 },
+          singlePurpose: { type: 'boolean', probability: 0.1 },
+          size: { type: 'score', score: 3.5 },
+        },
+      };
+    },
+  });
+
+  const calibrated = {
+    name: 'r',
+    provider: 'spy',
+    questions: {
+      acceptanceTestable: { type: 'boolean', instructions: 'x' },
+      singlePurpose: { type: 'boolean', instructions: 'x' },
+      size: { type: 'score', instructions: 'x', criteria: ['a', 'b'] },
+    },
+    thresholds: {
+      acceptanceTestable: { min: 0.82 },
+      singlePurpose: { min: 0.7 }, // inherited global default
+      size: { max: 2.0 }, // inherited global default
+    },
+    calibration: {
+      perQuestion: {
+        acceptanceTestable: { verdict: 'separates' },
+        singlePurpose: { verdict: 'does not separate' },
+        // size was never measured
+      },
+    },
+  };
+
+  const result = await assess(calibrated, 'state');
+  assert.deepEqual(asked, ['acceptanceTestable'], 'uncalibrated questions are not sent');
+  assert.equal(result.status, PASS);
+  assert.deepEqual(result.failed, []);
+  assert.equal(result.verdicts.singlePurpose.status, 'skipped');
+  assert.match(result.verdicts.singlePurpose.reason, /does not separate/);
+  assert.match(result.verdicts.size.reason, /not measured/);
+});
+
+test('an uncalibrated rubric still judges every question', async () => {
+  const result = await assess(rubric, 'Make reports better.');
+  assert.equal(Object.values(result.verdicts).some((v) => v.status === 'skipped'), false);
+});
+
+test('a calibrated rubric where nothing separated refuses to judge', async () => {
+  await assert.rejects(
+    assess({ ...rubric, calibration: { perQuestion: { acceptanceTestable: { verdict: 'does not separate' } } } }, 'x'),
+    /no question separated/,
+  );
+});

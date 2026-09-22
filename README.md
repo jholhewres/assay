@@ -143,6 +143,10 @@ sample, and the survivors can be all of one class. Transient gateway errors
 Keep the corpus beside the rubric: a threshold without the cases that produced
 it cannot be audited.
 
+Once a rubric is calibrated, **only the questions that separated judge**. The
+rest are reported as `SKIP` and not sent to the model — a question that failed
+to calibrate never falls back to an inherited default threshold.
+
 ## Rubrics
 
 Questions plus thresholds. Three ship with the tool: `story-refinement`,

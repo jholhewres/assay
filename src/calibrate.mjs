@@ -1,5 +1,5 @@
 import { getProvider } from './providers/index.mjs';
-import { scalarOf } from './evaluate.mjs';
+import { scalarOf, isUsable } from './evaluate.mjs';
 
 /**
  * Area under the ROC curve, by rank (Mann-Whitney U).
@@ -76,10 +76,7 @@ export function separationVerdict(areaUnderCurve, positives = Infinity, negative
   return 'does not separate';
 }
 
-/** Only these verdicts justify writing a threshold. */
-export function isUsable(verdict) {
-  return verdict === 'separates' || verdict === 'separates weakly';
-}
+export { isUsable };
 
 /**
  * Run a rubric over a labelled corpus and report, per question, whether it

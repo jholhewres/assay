@@ -43,7 +43,8 @@ if (run.error) {
 }
 
 const result = JSON.parse(run.stdout);
-const confidence = Math.min(...Object.values(result.verdicts).map((v) => v.value ?? 0));
+const judged = Object.values(result.verdicts).filter((v) => v.status !== 'skipped');
+const confidence = Math.min(...judged.map((v) => v.value ?? 0));
 
 if (run.status === 0) {
   current.passes = true;

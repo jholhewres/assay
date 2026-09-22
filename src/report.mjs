@@ -1,6 +1,6 @@
-import { PASS, REVIEW, FAIL, scalarOf } from './evaluate.mjs';
+import { PASS, REVIEW, FAIL, SKIPPED, scalarOf } from './evaluate.mjs';
 
-const MARK = { [PASS]: 'PASS', [REVIEW]: 'REVIEW', [FAIL]: 'FAIL' };
+const MARK = { [PASS]: 'PASS', [REVIEW]: 'REVIEW', [FAIL]: 'FAIL', [SKIPPED]: 'SKIP' };
 
 function fmt(value) {
   if (value === null || value === undefined) return '-';
@@ -43,7 +43,7 @@ export function renderBatch(rows) {
   for (const row of rows) {
     const cells = ids.map((id) => {
       const v = row.result.verdicts[id];
-      const glyph = v.status === PASS ? '+' : v.status === FAIL ? 'x' : '?';
+      const glyph = v.status === PASS ? '+' : v.status === FAIL ? 'x' : v.status === SKIPPED ? '' : '?';
       return pad(`${fmt(v.value)} ${glyph}`, colWidth);
     });
     lines.push(`  ${pad(row.id, idWidth)}  ${cells.join('')}${MARK[row.result.status]}`);

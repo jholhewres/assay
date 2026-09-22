@@ -1,6 +1,6 @@
 {
   "name": "assay",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Gate work on a measurement instead of a model's opinion: typed rubrics, calibrated thresholds, and a harness that checks whether a rubric actually separates.",
   "author": { "name": "Jhol Hewres" },
   "repository": "https://github.com/jholhewres/assay",

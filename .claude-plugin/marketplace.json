@@ -3,14 +3,14 @@
   "owner": { "name": "Jhol Hewres" },
   "metadata": {
     "description": "Measure artifacts against calibrated rubrics",
-    "version": "0.2.1"
+    "version": "0.2.2"
   },
   "plugins": [
     {
       "name": "assay",
       "source": "./",
       "description": "Gate story refinement, agent-loop completion, or review findings on a measurement instead of a model's opinion. Ships a calibration harness that tells you whether a rubric actually separates the cases you already know the answer to.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": { "name": "Jhol Hewres" },
       "category": "development",
       "keywords": ["rubric", "calibration", "evaluation", "quality-gate", "agent-loop", "ai-gateway"]
