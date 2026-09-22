@@ -1,0 +1,12 @@
+{
+  "name": "assay-cli",
+  "version": "0.1.0",
+  "description": "Measure an artifact against a rubric, and calibrate the rubric against cases you already know the answer to.",
+  "type": "module",
+  "bin": { "assay": "bin/assay.mjs" },
+  "files": ["bin", "src", "rubrics", "skill", "examples", "README.md"],
+  "engines": { "node": ">=20" },
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "keywords": ["rubric", "calibration", "evaluation", "agent", "llm", "gate"],
+  "license": "MIT"
+}

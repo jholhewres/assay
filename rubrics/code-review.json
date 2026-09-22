@@ -1,0 +1,31 @@
+{
+  "name": "code-review",
+  "description": "Triage a single review finding. It does not write the review — it grades a finding that already exists.",
+  "provider": "jev",
+  "model": "typesafe-ai/jev",
+  "questions": {
+    "blocksMerge": {
+      "type": "boolean",
+      "instructions": "Should this finding block the merge?",
+      "criteria": {
+        "true": "causes incorrect behaviour, data loss, or a security hole",
+        "false": "style, taste, or an improvement that can land later"
+      }
+    },
+    "severity": {
+      "type": "score",
+      "instructions": "How severe is this finding?",
+      "criteria": ["cosmetic", "minor", "significant", "critical"]
+    },
+    "actionable": {
+      "type": "boolean",
+      "instructions": "Does the finding name a specific location and a specific change, rather than a general concern?"
+    }
+  },
+  "thresholds": {
+    "blocksMerge": { "min": 0.75, "grey": 0.5 },
+    "severity": { "max": 2.0, "grey": 2.5 },
+    "actionable": { "min": 0.7 }
+  },
+  "calibration": null
+}

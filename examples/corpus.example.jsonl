@@ -1,0 +1,6 @@
+{"id":"S-001","label":true,"state":"Export the evaluations report as CSV.\nAcceptance: the Export button downloads a file whose header is name,date,score and which contains one row per evaluation inside the active date filter.\nCheck: filter to March, export, expect 4 rows."}
+{"id":"S-002","label":false,"state":"Improve the reports screen.\nAcceptance: reports should work correctly."}
+{"id":"S-003","label":true,"state":"Reject sign-up when the email domain has no MX record.\nAcceptance: POST /signup with an address at a domain lacking MX returns 422 and the body names the field. Existing accounts are untouched.\nCheck: unit test with a stub resolver."}
+{"id":"S-004","label":false,"state":"Refactor the billing module and also fix the timezone bug and update the docs.\nAcceptance: everything still works."}
+{"id":"S-005","label":false,"state":"Make the dashboard faster."}
+{"id":"S-006","label":true,"state":"Cache the currency table for 10 minutes.\nAcceptance: a second call within 10 minutes performs no database query; after 10 minutes it queries again.\nCheck: assert query count around a clock stub."}

@@ -1,0 +1,36 @@
+{
+  "name": "story-refinement",
+  "description": "Judge a user story before it enters a backlog or a plan file.",
+  "provider": "jev",
+  "model": "typesafe-ai/jev",
+  "questions": {
+    "acceptanceTestable": {
+      "type": "boolean",
+      "instructions": "Does the acceptance criteria describe a check that fails before the change and passes after it?",
+      "criteria": {
+        "true": "names an observable outcome someone could assert on",
+        "false": "states an intention, a quality, or a direction with nothing to assert"
+      }
+    },
+    "startable": {
+      "type": "boolean",
+      "instructions": "Could a developer start this story without asking anyone a question first?"
+    },
+    "singlePurpose": {
+      "type": "boolean",
+      "instructions": "Does this story describe one change, rather than several bundled together?"
+    },
+    "size": {
+      "type": "score",
+      "instructions": "How much work is this?",
+      "criteria": ["trivial", "about a day", "a few days", "more than one iteration"]
+    }
+  },
+  "thresholds": {
+    "acceptanceTestable": { "min": 0.8, "grey": 0.6 },
+    "startable": { "min": 0.75, "grey": 0.55 },
+    "singlePurpose": { "min": 0.7 },
+    "size": { "max": 2.0, "grey": 2.5 }
+  },
+  "calibration": null
+}

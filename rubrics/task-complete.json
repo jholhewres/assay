@@ -1,0 +1,30 @@
+{
+  "name": "task-complete",
+  "description": "Ask whether a unit of work is actually finished. Built for agent loops that otherwise re-ask the model the same question until it agrees.",
+  "provider": "jev",
+  "model": "typesafe-ai/jev",
+  "questions": {
+    "criteriaMet": {
+      "type": "boolean",
+      "instructions": "Do the changes satisfy every acceptance criterion stated in the task?"
+    },
+    "verified": {
+      "type": "boolean",
+      "instructions": "Does the test output show the relevant checks running and passing?",
+      "criteria": {
+        "true": "tests covering this change ran and passed",
+        "false": "no test output, tests skipped, or failures present"
+      }
+    },
+    "inScope": {
+      "type": "boolean",
+      "instructions": "Do the changes stay within what the task asked for, without unrelated edits?"
+    }
+  },
+  "thresholds": {
+    "criteriaMet": { "min": 0.85, "grey": 0.65 },
+    "verified": { "min": 0.9 },
+    "inScope": { "min": 0.7 }
+  },
+  "calibration": null
+}
