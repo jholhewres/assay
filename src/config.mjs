@@ -4,12 +4,19 @@ import { join, dirname, resolve } from 'node:path';
 
 const GLOBAL_DIR = process.env.ASSAY_HOME || join(homedir(), '.assay');
 
-/** Walk up from `start` looking for a `.assay` directory. */
+/**
+ * Walk up from `start` looking for a `.assay` directory.
+ *
+ * The global directory is skipped: when it lives under the home directory,
+ * every path inside home would otherwise "find" it and report the global
+ * rubrics as local overrides of themselves.
+ */
 export function findLocalDir(start = process.cwd()) {
+  const global = resolve(GLOBAL_DIR);
   let dir = resolve(start);
   for (;;) {
     const candidate = join(dir, '.assay');
-    if (existsSync(candidate)) return candidate;
+    if (existsSync(candidate) && resolve(candidate) !== global) return candidate;
     const parent = dirname(dir);
     if (parent === dir) return null;
     dir = parent;

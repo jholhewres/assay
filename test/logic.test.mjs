@@ -88,3 +88,25 @@ test('exit codes map to the three outcomes', () => {
   assert.equal(exitCodeFor(FAIL), 1);
   assert.equal(exitCodeFor(REVIEW), 2);
 });
+
+test('the global directory is never mistaken for a local override', async (t) => {
+  const { mkdtempSync, mkdirSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+
+  const home = mkdtempSync(join(tmpdir(), 'assay-'));
+  const global = join(home, '.assay');
+  mkdirSync(global);
+  const nested = join(home, 'some', 'project');
+  mkdirSync(nested, { recursive: true });
+
+  process.env.ASSAY_HOME = global;
+  const { findLocalDir } = await import('../src/config.mjs?fresh=' + Date.now());
+  t.after(() => { delete process.env.ASSAY_HOME; rmSync(home, { recursive: true, force: true }); });
+
+  assert.equal(findLocalDir(nested), null, 'walking up into home must not adopt the global dir');
+
+  const own = join(nested, '.assay');
+  mkdirSync(own);
+  assert.equal(findLocalDir(nested), own, 'a real local dir is still found');
+});
